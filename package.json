@@ -1,0 +1,8 @@
+{
+  "name": "node-git-http-end",
+  "version": "1.0.0",
+  "dependencies": {
+    "git-http-backend": "^1.1.2",
+    "express": "^4.18.1"
+  }
+}
