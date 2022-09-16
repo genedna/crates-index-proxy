@@ -1,0 +1,4 @@
+proxy.rust-lang.pub {
+    tls /etc/letsencrypt/live/rust-lang.pub/fullchain.pem /etc/letsencrypt/live/rust-lang.pub/privkey.pem
+    reverse_proxy 127.0.0.1:6789
+}
