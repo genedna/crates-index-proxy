@@ -144,6 +144,44 @@ The project is not for production, it's for learning the crates index mechanism.
    $ pipy proxy.js
    ```
 
+#### 7. Sync crates.io-index and crate files with Freighter
+
+Now [we](https://github.com/open-rust-Initiative) are working on a __pure__ Rust registry projects named [Freighter](https://github.com/open-rust-Initiative/freighter).
+
+1. Clone the project to the droplet and build.
+   ```bash
+   $ git clone https://github.com/open-rust-Initiative/freighter.git
+   $ cd freighter
+   $ cargo build --release
+   $ cp ./target/release/freighter /usr/local/bin
+   ```
+
+2. Sync the crates.io-index with Freighter.
+   ```bash
+   $ freighter sync pull && freighter sync -t 32 -c /opt/rust download --init
+   ```
+
+3. Sync the crates files with Freighter.
+   ```bash
+   $ crontab -e
+   $ # Add the following line to the crontab file
+   $ */1 * * * * freighter sync pull && freighter sync -t 32 -c /opt/rust download
+   ```
+
+#### 8. Management DigitalOcean Space with s3cmd
+
+1. Install `s3cmd` 
+
+   ```shell
+   $ apt install s3cmd
+   ```
+
+2. Configure `s3cmd` 
+
+   ```shell
+   $ s3cmd --configure
+   ```
+
 ### TODO List
 
   * [ ] Cache the crate files from the crates.io.
