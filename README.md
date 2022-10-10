@@ -12,12 +12,15 @@ The project is not for production, it's for learning the crates index mechanism.
 
 1. Buy a domain from [name.com](https://name.com), I already had **rust-lang.pub**, and use **proxy.rust-lang.pub** as proxy domain.
 2. Change the nameservers of **rust-lang.pub** to the [DigitalOcean](https://m.do.co/c/bbf00c247f50)'s domains nameservers (`ns1.digitalocean.com`, `ns2.digitalocean.com` and `ns3.digitalocean.com`).
+   ![Change nameservers of domain](docs/images/name-nameservers-change-to-do.jpg)
 3. Add **rust-lang.pub** to the [DigitalOcean](https://m.do.co/c/bbf00c247f50)'s domains in the **Networking -> Domains** tab.
+   ![Add domain to DigitalOcean](docs/images/add-domain-in-do-networking.png)
 
 #### 2. Prepare a Proxy Server
 
 1. Create a droplet from [DigitalOcean](https://m.do.co/c/bbf00c247f50). I chose a droplet with 8GB memory and 4 CPUs located in Singapore, and the droplet is running Ubuntu 22.04.
-   >Please note that the droplet use the **root** user.
+   > Please note that the droplet use the **root** user.
+   ![Create a droplet](docs/images/create-a-droplet-in-do.png)
 2. Installed [Rust](https://rust-lang.org), [Golang](https://golang.dev), [Node.js](https://nodejs.org/en/) and [pipy](https://flomesh.io) on the droplet.
    ```bash
    $ # Install dependencies packages
@@ -44,6 +47,7 @@ The project is not for production, it's for learning the crates index mechanism.
 #### 3. Prepare the domain and certificates
 
 1. Add a subdomain like **proxy.rust-lang.pub** direct to the droplet in the **Networking -> Domains -> rust-lang.pub -> crate new record** tab.
+   ![Add subdomain in DigitalOcean](docs/images/add-cname-to-droplet-in-do.png)
 2. Install [certbot](https://certbot.eff.org) on the droplet, and get the certificates.
    ```bash
    $ snap install --classic certbot
@@ -65,12 +69,12 @@ The project is not for production, it's for learning the crates index mechanism.
    $ mkdir /opt/rust
    $ cd /opt/rust && git clone https://github.com/rust-lang/crates.io-index.git
    ```
-2. Create a cron job to update the crates index repository.
+2. Create a cron script named `cron-pull-crates-index.sh` to update the crates index repository.
    ```shell
    #!/bin/bash
    
    cd /opt/rust/crates.io-index || exit
-   git fetch
+   git fetch origin
    git merge origin/master --no-edit
    git prune
    
@@ -87,7 +91,11 @@ The project is not for production, it's for learning the crates index mechanism.
    $ systemctl restart cron
    $ systemctl enable cron
    ```
-
+5. View cron logs.
+   ```bash
+   $ tail -f /var/log/syslog
+   ```
+   
 #### 5. Run the git http backend server
 
 1. Clone the project to the droplet.
@@ -143,10 +151,100 @@ The project is not for production, it's for learning the crates index mechanism.
    $ screen
    $ pipy proxy.js
    ```
+3. Test the proxy with `git` command
+   ```bash
+   $ git clone https://proxy.rust-lang.pub/crates.io-index.git
+   ```
+4. Update local cargo config file.
+   ```toml
+   [source.crates-io]
+   replace-with = 'rustpub'
+   
+   [source.rustpub]
+   registry = "https://proxy.rust-lang.pub/crates.io-index"
+   
+   [registries.rustpub]
+   index = "https://proxy.rust-lang.pub/crates.io-index"
+   ```
+> For now, you already have a crates index proxy server, you could use it to speed up the `cargo build` command or deploy it to your local development environment.
 
-#### 7. Sync crates.io-index and crate files with Freighter
+### Cache the crates index and crate files at the same time
 
-Now [we](https://github.com/open-rust-Initiative) are working on a __pure__ Rust registry projects named [Freighter](https://github.com/open-rust-Initiative/freighter).
+If you want to cache the crate files to speed up, you should use [Freighter](https://github.com/open-rust-initiative/freighter) to cache the crates index and crate files at the same time.
+
+#### 1. Management DigitalOcean Space with s3cmd
+
+You can use local filesystem to cache the crates files or use Object Storage Service like DigitalOcean Space to do. Almost all the Object Storage Service support the S3 protocol, so you can use [s3cmd](https://s3tools.org/s3cmd) to manage the Object Storage Service.
+
+1. Create a bucket in DigitalOcean Space.
+   ![Create a bucket in DigitalOcean Space](docs/images/create-space-in-do-space.png)
+2. Create a folder `crates` in space.
+   ![Create a folder in DigitalOcean Space](docs/images/create-folder-in-space.png)
+3. Generate a Space Access Key and Secret Key and remember it.
+   ![Generate a Space Access Key and Secret Key](docs/images/generate-space-access-key.png)
+4. Install `s3cmd` on the droplet.
+   ```shell
+   $ apt install s3cmd
+   ```
+5. Configure `s3cmd` with the DigitalOcean Space.
+   ```shell
+   $ s3cmd --configure
+   Enter new values or accept defaults in brackets with Enter.
+   Refer to user manual for detailed description of all options.
+
+   Access key and Secret key are your identifiers for Amazon S3. Leave them empty for using the env variables.
+   Access Key: Your DigitalOcean Space Access Key
+   Secret Key: Your DigitalOcean Space Secret Key
+   Default Region [US]:
+
+   Use "s3.amazonaws.com" for S3 Endpoint and not modify it to the target Amazon S3.
+   S3 Endpoint: sgp1.digitaloceanspaces.com
+
+   Use "%(bucket)s.s3.amazonaws.com" to the target Amazon S3. "%(bucket)s" and "%(location)s" vars can be used
+   if the target S3 system supports dns based buckets.
+   DNS-style bucket+hostname:port template for accessing a bucket: %(bucket)s.sgp1.digitaloceanspaces.com
+
+   Encryption password is used to protect your files from reading
+   by unauthorized persons while in transfer to S3
+   Encryption password:
+   Path to GPG program [/opt/homebrew/bin/gpg]:
+
+   When using secure HTTPS protocol all communication with Amazon S3
+   servers is protected from 3rd party eavesdropping. This method is
+   slower than plain HTTP, and can only be proxied with Python 2.7 or newer
+   Use HTTPS protocol [Yes]:
+
+   On some networks all internet access must go through a HTTP proxy.
+   Try setting it here if you can't connect to S3 directly
+   HTTP Proxy server name [127.0.0.1]:
+   HTTP Proxy server port [7890]:
+
+   New settings:
+   Access Key: Your DigitalOcean Space Access Key
+   Secret Key: Your DigitalOcean Space Secret Key
+   Default Region: US
+   S3 Endpoint: sgp1.digitaloceanspaces.com
+   DNS-style bucket+hostname:port template for accessing a bucket: %(bucket)s.sgp1.digitaloceanspaces.com
+   Encryption password:
+   Path to GPG program: /opt/homebrew/bin/gpg
+   Use HTTPS protocol: True
+   HTTP Proxy server name: 127.0.0.1
+   HTTP Proxy server port: 7890
+
+   Test access with supplied credentials? [Y/n]
+   Please wait, attempting to list all buckets...
+   Success. Your access key and secret key worked fine :-)
+
+   Now verifying that encryption works...
+   Not configured. Never mind.
+
+   Save settings? [y/N] y
+   Configuration saved to '/Users/eli/.s3cfg'
+   ```
+
+#### 2. Advanced: Sync crates.io-index and crate files with Freighter
+
+Now [we](https://github.com/open-rust-Initiative) are working on a __pure__ Rust registry projects named [Freighter](https://github.com/open-rust-Initiative/freighter). The first version of Freighter focuses on syncing the crates.io-index and crate files to build proxy function.
 
 1. Clone the project to the droplet and build.
    ```bash
@@ -158,28 +256,14 @@ Now [we](https://github.com/open-rust-Initiative) are working on a __pure__ Rust
 
 2. Sync the crates.io-index with Freighter.
    ```bash
-   $ freighter sync pull && freighter sync -t 32 -c /opt/rust download --init
+   $ freighter sync pull && freighter sync -t 128 -c /opt/rust download --init
    ```
 
 3. Sync the crates files with Freighter.
    ```bash
    $ crontab -e
    $ # Add the following line to the crontab file
-   $ */1 * * * * freighter sync pull && freighter sync -t 32 -c /opt/rust download
-   ```
-
-#### 8. Management DigitalOcean Space with s3cmd
-
-1. Install `s3cmd` 
-
-   ```shell
-   $ apt install s3cmd
-   ```
-
-2. Configure `s3cmd` 
-
-   ```shell
-   $ s3cmd --configure
+   $ */1 * * * * freighter sync pull && freighter sync -t 256 -c /opt/rust download
    ```
 
 ### TODO List
