@@ -60,6 +60,41 @@ The project is not for production, it's for learning the crates index mechanism.
    $ # Get the certificates
    $ chmod 400 $HOME/.secrets/certbot/digitalocean.ini
    $ certbot certonly --dns-digitalocean --dns-digitalocean-credentials ~/.secrets/certbot/digitalocean.ini -d rust-lang.pub -d '*.rust-lang.pub'
+   Saving debug log to /var/log/letsencrypt/letsencrypt.log
+   Enter email address (used for urgent renewal and security notices)
+   (Enter 'c' to cancel): eli@patch.sh
+
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Please read the Terms of Service at
+   https://letsencrypt.org/documents/LE-SA-v1.3-September-21-2022.pdf. You must
+   agree in order to register with the ACME server. Do you agree?
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   (Y)es/(N)o: Y
+
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Would you be willing, once your first certificate is successfully issued, to
+   share your email address with the Electronic Frontier Foundation, a founding
+   partner of the Let's Encrypt project and the non-profit organization that
+   develops Certbot? We'd like to send you email about our work encrypting the web,
+   EFF news, campaigns, and ways to support digital freedom.
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   (Y)es/(N)o: Y
+   Account registered.
+   Requesting a certificate for rust-lang.pub and *.rust-lang.pub
+   Waiting 10 seconds for DNS changes to propagate
+
+   Successfully received certificate.
+   Certificate is saved at: /etc/letsencrypt/live/rust-lang.pub/fullchain.pem
+   Key is saved at:         /etc/letsencrypt/live/rust-lang.pub/privkey.pem
+   This certificate expires on 2023-01-11.
+   These files will be updated when the certificate renews.
+   Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   If you like Certbot, please consider supporting our work by:
+   * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+   * Donating to EFF:                    https://eff.org/donate-le
+   - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    ```
 
 #### 4. Prepare the index of crates
