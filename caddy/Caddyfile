@@ -1,4 +1,35 @@
-proxy.rust-lang.pub {
+http://proxy.rust-lang.pub {
+    redir https://proxy.rust-lang.pub{uri}
+}
+
+https://proxy.rust-lang.pub {
     tls /etc/letsencrypt/live/rust-lang.pub/fullchain.pem /etc/letsencrypt/live/rust-lang.pub/privkey.pem
     reverse_proxy 127.0.0.1:6789
+}
+
+http://files.rust-lang.pub {
+    redir https://files.rust-lang.pub{uri}
+}
+
+https://files.rust-lang.pub {
+    tls /etc/letsencrypt/live/rust-lang.pub/fullchain.pem /etc/letsencrypt/live/rust-lang.pub/privkey.pem
+
+    file_server {
+        root /mnt/volume_fra1_01/
+        hide lost+found
+    }
+
+    @rewrite {
+        path_regexp f ^/crates/(.*)/(.*)/download$
+    }
+
+    rewrite @rewrite /crates/{http.regexp.f.1}/{http.regexp.f.1}-{http.regexp.f.2}.crate
+
+    header {
+         Cache-Control no-cache
+         Content-Transfer-Encoding binary
+         Content-Type "text/plain; charset=utf-8"
+         X-Content-Type-Options nosniff
+         Content-Disposition attachment
+    }
 }
