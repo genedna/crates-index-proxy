@@ -203,6 +203,34 @@ The project is not for production, it's for learning the crates index mechanism.
    ```
 > For now, you already have a crates index proxy server, you could use it to speed up the `cargo build` command or deploy it to your local development environment.
 
+
+### Deploy Proxy of Crates Index With Docker
+
+#### 1. Use Freighter to sync registery
+
+Now [we](https://github.com/open-rust-Initiative) are working on a __pure__ Rust registry projects named [Freighter](https://github.com/open-rust-Initiative/freighter). The first version of Freighter focuses on syncing the crates.io-index and crate files to build proxy function.
+
+1. Pull docker image from your registry.
+   ```bash
+   docker pull registry.digitalocean.com/rust-lang/freighter:latest
+
+   docker pull registry.digitalocean.com/rust-lang/crates-index-proxy:latest
+   ```
+
+2. Start dokcer container
+   ```bash
+   docker run -it -d -v /opt/rust:/opt/rust --name git-index registry.digitalocean.com/rust-lang/freighter:latest
+
+   docker run -it -d -v /opt/rust:/opt/rust -p 6789:6789/tcp registry.digitalocean.com/rust-lang/crates-index-proxy:latest
+   ```
+
+3. Add the cron job to the crontab.
+   ```bash
+   $ crontab -e
+   $ # Add the following line to the crontab file
+   $ */1 * * * * docker exec git-index bash -c 'freighter sync -c /opt/rust pull'
+   ```
+
 ### Cache the crates index and crate files at the same time
 
 If you want to cache the crate files to speed up, you should use [Freighter](https://github.com/open-rust-initiative/freighter) to cache the crates index and crate files at the same time.

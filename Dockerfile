@@ -1,5 +1,5 @@
-FROM node:16
-
+FROM node:16-alpine
+RUN apk add --no-cache libc6-compat git
 # Create app directory
 WORKDIR /usr/src/app
 

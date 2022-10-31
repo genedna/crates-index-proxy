@@ -1,5 +1,5 @@
 {
   "repo": "crates.io-index",
   "port": 6789,
-  "root": "/opt/rust"
+  "root": "/opt/rust/freighter"
 }
